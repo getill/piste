@@ -1,6 +1,33 @@
-# Piste — TP Flutter
+# Piste — suivi de candidatures
 
-Application de suivi de candidatures réalisée au fil des TP.
+Piste aide à suivre une recherche d’emploi : retrouver ses candidatures,
+préparer les relances et visualiser leur avancement. L’application est réalisée
+avec **Flutter/Dart, Material 3 et SQLite (`sqflite`)**, au fil des TP.
+
+## Installer la version Android
+
+La livraison **1.0.0** est préparée pour Android 7.0 ou plus récent.
+L’APK universelle signée fait environ 53 Mo. La publication GitHub reste à valider.
+
+[Release v1.0.0](https://github.com/getill/piste/releases/tag/v1.0.0) ·
+[APK de diffusion](https://github.com/getill/piste/releases/download/v1.0.0/piste-1.0.0-android.apk)
+
+Ces liens seront actifs après publication. Pour installer, ouvrir l’APK sur Android
+et autoriser si nécessaire cette source d’installation.
+
+[Installation, compilation et scénario de démonstration](docs/livraison.md) ·
+[Fonctionnement des données](docs/confidentialite.md)
+
+L’application fonctionne localement, sans compte ni synchronisation. La version
+Web/Linux et la distribution iOS ne font pas partie de cette livraison.
+
+## Aperçu de la version release
+
+Captures prises dans l’APK signée installée sur l’émulateur Android :
+
+| Accueil | Fiche de candidature | Bilan |
+| --- | --- | --- |
+| ![Accueil Piste](docs/captures/livraison/accueil.png) | ![Fiche de candidature](docs/captures/livraison/detail.png) | ![Bilan Piste](docs/captures/livraison/bilan.png) |
 
 ## État du projet
 
