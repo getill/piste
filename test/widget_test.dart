@@ -289,4 +289,102 @@ void main() {
     expect(find.text('Détail de la candidature'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('Affiche le chargement, puis le vide et un bilan à zéro', (
+    tester,
+  ) async {
+    final attente = Completer<void>();
+    final repo = FakeCandidatureRepository()..attenteLecture = attente.future;
+    await tester.pumpWidget(MyApp(repository: repo));
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    attente.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Aucune candidature.'), findsOneWidget);
+    await tester.tap(find.text('Bilan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Total : 0'), findsOneWidget);
+    for (final indicateur in tester.widgetList<LinearProgressIndicator>(
+      find.byType(LinearProgressIndicator),
+    )) {
+      expect(indicateur.value, 0);
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'Une lecture échouée propose Réessayer et ne prétend pas être vide',
+    (tester) async {
+      final repo = FakeCandidatureRepository(candidaturesDemo())
+        ..echecLecture = true;
+      await tester.pumpWidget(MyApp(repository: repo));
+      await tester.pumpAndSettle();
+      expect(find.text('Chargement impossible. Réessayez.'), findsOneWidget);
+      expect(find.text('Aucune candidature.'), findsNothing);
+      expect(find.byType(Card), findsNothing);
+      repo.echecLecture = false;
+      await tester.tap(find.text('Réessayer'));
+      await tester.pumpAndSettle();
+      expect(find.byType(Card), findsNWidgets(2));
+    },
+  );
+
+  testWidgets(
+    'Recherche et filtre se combinent, le bilan compte toutes les données',
+    (tester) async {
+      await tester.pumpWidget(
+        MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
+      );
+      await tester.pumpAndSettle();
+      final recherche = find.widgetWithText(
+        TextField,
+        'Rechercher une candidature',
+      );
+      await tester.enterText(recherche, 'WEB');
+      await tester.pumpAndSettle();
+      expect(find.byType(Card), findsOneWidget);
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Envoyée'));
+      await tester.pumpAndSettle();
+      expect(find.text('Aucun résultat pour ces critères.'), findsOneWidget);
+      await tester.tap(find.text('Bilan'));
+      await tester.pumpAndSettle();
+      expect(find.text('Total : 2'), findsOneWidget);
+      final envoyees = find.widgetWithText(ListTile, 'Envoyée');
+      final entretiens = find.widgetWithText(ListTile, 'Entretien');
+      expect(
+        find.descendant(of: envoyees, matching: find.text('1')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: entretiens, matching: find.text('1')),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Candidatures'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextField>(recherche).controller!.text, 'WEB');
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Toutes'));
+      await tester.pumpAndSettle();
+      expect(find.byType(Card), findsOneWidget);
+    },
+  );
+
+  testWidgets('Conserve la recherche après une écriture et sa relecture', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
+    );
+    await tester.pumpAndSettle();
+    final recherche = find.widgetWithText(
+      TextField,
+      'Rechercher une candidature',
+    );
+    await tester.enterText(recherche, 'absent');
+    await tester.pumpAndSettle();
+    await ouvrirFormulaire(tester);
+    await saisir(tester, 'Mobile', 'Piste');
+    await enregistrer(tester);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(recherche).controller!.text, 'absent');
+    expect(find.text('Aucun résultat pour ces critères.'), findsOneWidget);
+  });
 }

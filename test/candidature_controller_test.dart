@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tp_intro/models/candidature.dart';
 import 'package:tp_intro/state/candidature_controller.dart';
@@ -107,4 +109,101 @@ void main() {
     );
     expect(controller.candidatures.length, 2);
   });
+  test(
+    'Distingue le chargement, le vide, l’erreur et la réussite après retry',
+    () async {
+      final attente = Completer<void>();
+      final repo = FakeCandidatureRepository()..attenteLecture = attente.future;
+      final controller = CandidatureController(repo);
+      addTearDown(controller.dispose);
+      final chargement = controller.charger();
+      expect(controller.etat, EtatChargement.loading);
+      expect(controller.occupe, isTrue);
+      attente.complete();
+      await chargement;
+      expect(controller.etat, EtatChargement.empty);
+      repo.echecLecture = true;
+      await controller.charger();
+      expect(controller.etat, EtatChargement.error);
+      expect(controller.messageErreur, isNotNull);
+      repo.echecLecture = false;
+      await controller.charger();
+      expect(controller.etat, EtatChargement.empty);
+      await controller.enregistrer(
+        poste: 'Mobile',
+        entreprise: 'Piste',
+        statut: StatutCandidature.envoyee,
+      );
+      expect(controller.etat, EtatChargement.success);
+    },
+  );
+
+  test('Combine recherche et statut sans modifier la liste complète', () async {
+    final controller = CandidatureController(
+      FakeCandidatureRepository(candidaturesDemo()),
+    );
+    addTearDown(controller.dispose);
+    await controller.charger();
+    controller.rechercher('  MOBILE  ');
+    expect(controller.visibles.single.entreprise, 'Atelier Mobile');
+    controller.filtrer(StatutCandidature.entretien);
+    expect(controller.visibles, isEmpty);
+    expect(controller.candidatures.length, 2);
+    controller.rechercher('WEB');
+    expect(controller.visibles.single.entreprise, 'Studio Numérique');
+    controller.filtrer(null);
+    controller.rechercher('');
+    expect(controller.visibles.length, 2);
+  });
+
+  test(
+    'Une relecture échouée après écriture ne fait pas répéter la création',
+    () async {
+      final repo = FakeCandidatureRepository();
+      final controller = CandidatureController(repo);
+      addTearDown(controller.dispose);
+      await controller.charger();
+      repo.echecLecture = true;
+      final enregistree = await controller.enregistrer(
+        poste: 'Mobile',
+        entreprise: 'Piste',
+        statut: StatutCandidature.envoyee,
+      );
+      expect(enregistree.id, isNotNull);
+      expect(controller.etat, EtatChargement.error);
+      expect(controller.messageErreur, contains('enregistrée'));
+      repo.echecLecture = false;
+      await controller.charger();
+      expect(controller.candidatures.single.id, enregistree.id);
+      expect(repo.enregistrements, 1);
+    },
+  );
+
+  test(
+    'Bloque deux mutations simultanées et ne notifie pas après dispose',
+    () async {
+      final attente = Completer<void>();
+      final repo = FakeCandidatureRepository()
+        ..attenteEcriture = attente.future;
+      final controller = CandidatureController(repo);
+      await controller.charger();
+      final creation = controller.enregistrer(
+        poste: 'Mobile',
+        entreprise: 'Piste',
+        statut: StatutCandidature.envoyee,
+      );
+      await expectLater(
+        controller.enregistrer(
+          poste: 'Double',
+          entreprise: 'Piste',
+          statut: StatutCandidature.envoyee,
+        ),
+        throwsStateError,
+      );
+      controller.dispose();
+      attente.complete();
+      expect((await creation).id, isNotNull);
+      expect(repo.enregistrements, 1);
+    },
+  );
 }

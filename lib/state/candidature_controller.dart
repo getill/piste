@@ -77,6 +77,7 @@ class CandidatureController extends ChangeNotifier {
     _notifier();
     try {
       final resultat = await operation();
+      if (_detruit) return resultat;
       try {
         await _relire();
       } catch (_) {

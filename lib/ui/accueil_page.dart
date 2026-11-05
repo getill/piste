@@ -5,10 +5,24 @@ import '../state/candidature_controller.dart';
 import 'candidature_detail_page.dart';
 import 'candidature_form_page.dart';
 
-class AccueilPage extends StatelessWidget {
+class AccueilPage extends StatefulWidget {
   const AccueilPage({super.key, required this.controller});
 
   final CandidatureController controller;
+
+  @override
+  State<AccueilPage> createState() => _AccueilPageState();
+}
+
+class _AccueilPageState extends State<AccueilPage> {
+  final _recherche = TextEditingController();
+  CandidatureController get controller => widget.controller;
+
+  @override
+  void dispose() {
+    _recherche.dispose();
+    super.dispose();
+  }
 
   Future<void> _ajouter(BuildContext context) async {
     final candidature = await Navigator.of(context).push<Candidature>(
@@ -57,6 +71,7 @@ class AccueilPage extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(16),
               child: TextField(
+                controller: _recherche,
                 onChanged: controller.rechercher,
                 decoration: const InputDecoration(
                   labelText: 'Rechercher une candidature',
