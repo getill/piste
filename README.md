@@ -7,13 +7,13 @@ avec **Flutter/Dart, Material 3 et SQLite (`sqflite`)**, au fil des TP.
 ## Installer la version Android
 
 La livraison **1.0.0** est préparée pour Android 7.0 ou plus récent.
-L’APK universelle signée fait environ 53 Mo. La publication GitHub reste à valider.
+L’APK universelle signée fait environ 53 Mo et est disponible dans la release GitHub.
 
 [Release v1.0.0](https://github.com/getill/piste/releases/tag/v1.0.0) ·
 [APK de diffusion](https://github.com/getill/piste/releases/download/v1.0.0/piste-1.0.0-android.apk)
 
-Ces liens seront actifs après publication. Pour installer, ouvrir l’APK sur Android
-et autoriser si nécessaire cette source d’installation.
+Pour installer, ouvrir l’APK sur Android et autoriser si nécessaire cette source
+d’installation.
 
 [Installation, compilation et scénario de démonstration](docs/livraison.md) ·
 [Fonctionnement des données](docs/confidentialite.md)
