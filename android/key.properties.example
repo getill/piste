@@ -1,0 +1,4 @@
+storePassword=REMPLACER_PAR_VOTRE_MOT_DE_PASSE
+keyPassword=REMPLACER_PAR_VOTRE_MOT_DE_PASSE
+keyAlias=piste
+storeFile=../.signing/piste-release.jks

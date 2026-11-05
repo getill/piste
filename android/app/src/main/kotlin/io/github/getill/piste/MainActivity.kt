@@ -1,4 +1,4 @@
-package com.example.tp_intro
+package io.github.getill.piste
 
 import io.flutter.embedding.android.FlutterActivity
 
