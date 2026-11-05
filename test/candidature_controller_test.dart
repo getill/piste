@@ -36,9 +36,14 @@ void main() {
       entreprise: 'Piste',
       statut: StatutCandidature.entretien,
       dateRelance: relance,
+      lienOffre: ' https://exemple.fr/offre ',
+      notes: ' Préparer le portfolio. ',
     );
     expect(modifiee.id, creee.id);
-    expect(modifiee.dateCandidature, creee.dateCandidature);
+    expect(modifiee.lienOffre, 'https://exemple.fr/offre');
+    expect(modifiee.notes, 'Préparer le portfolio.');
+    expect(modifiee.dateModification.isBefore(creee.dateModification), isFalse);
+    expect(modifiee.dateCreation, creee.dateCreation);
     expect(controller.candidature(creee.id).dateRelance, relance);
     expect(controller.candidatures.length, 3);
     await controller.supprimer(creee.id);
@@ -59,6 +64,31 @@ void main() {
     );
     await expectLater(controller.supprimer(1), throwsException);
     expect(controller.candidatures.length, 2);
+  });
+
+  test('Valide le lien optionnel avant la sauvegarde', () async {
+    expect(Candidature.lienOffreValide(null), isTrue);
+    expect(Candidature.lienOffreValide(''), isTrue);
+    expect(Candidature.lienOffreValide('https://exemple.fr/offre'), isTrue);
+    expect(Candidature.lienOffreValide('https://'), isFalse);
+    final controller = CandidatureController();
+    addTearDown(controller.dispose);
+    await expectLater(
+      controller.enregistrer(
+        poste: 'Mobile',
+        entreprise: 'Piste',
+        statut: StatutCandidature.envoyee,
+        lienOffre: 'javascript:alert(1)',
+      ),
+      throwsArgumentError,
+    );
+    final creee = await controller.enregistrer(
+      poste: 'Mobile',
+      entreprise: 'Piste',
+      statut: StatutCandidature.offre,
+    );
+    expect(creee.dateCreation, creee.dateModification);
+    expect(controller.candidatures.length, 3);
   });
 
   test('Refuse les champs composés uniquement d’espaces', () async {

@@ -21,16 +21,19 @@ class _CandidatureFormPageState extends State<CandidatureFormPage> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _poste;
   late final TextEditingController _entreprise;
+  late final TextEditingController _lienOffre;
+  late final TextEditingController _notes;
   late StatutCandidature _statut;
   DateTime? _dateRelance;
   bool _enregistrement = false;
-  String? _erreur;
 
   @override
   void initState() {
     super.initState();
     _poste = TextEditingController(text: widget.candidature?.poste);
     _entreprise = TextEditingController(text: widget.candidature?.entreprise);
+    _lienOffre = TextEditingController(text: widget.candidature?.lienOffre);
+    _notes = TextEditingController(text: widget.candidature?.notes);
     _statut = widget.candidature?.statut ?? StatutCandidature.envoyee;
     _dateRelance = widget.candidature?.dateRelance;
   }
@@ -39,6 +42,8 @@ class _CandidatureFormPageState extends State<CandidatureFormPage> {
   void dispose() {
     _poste.dispose();
     _entreprise.dispose();
+    _lienOffre.dispose();
+    _notes.dispose();
     super.dispose();
   }
 
@@ -60,10 +65,8 @@ class _CandidatureFormPageState extends State<CandidatureFormPage> {
 
   Future<void> _enregistrer() async {
     if (_enregistrement || !_formKey.currentState!.validate()) return;
-    setState(() {
-      _enregistrement = true;
-      _erreur = null;
-    });
+    FocusScope.of(context).unfocus();
+    setState(() => _enregistrement = true);
     try {
       final candidature = await widget.controller.enregistrer(
         initiale: widget.candidature,
@@ -71,15 +74,20 @@ class _CandidatureFormPageState extends State<CandidatureFormPage> {
         entreprise: _entreprise.text,
         statut: _statut,
         dateRelance: _dateRelance,
+        lienOffre: _lienOffre.text,
+        notes: _notes.text,
       );
       if (!mounted) return;
       Navigator.of(context).pop(candidature);
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _erreur =
-            'Enregistrement impossible. Réessayez, votre saisie est conservée.';
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Enregistrement impossible. Réessayez, votre saisie est conservée.',
+          ),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _enregistrement = false);
     }
@@ -104,7 +112,10 @@ class _CandidatureFormPageState extends State<CandidatureFormPage> {
             TextFormField(
               controller: _poste,
               enabled: !_enregistrement,
-              decoration: const InputDecoration(labelText: 'Poste'),
+              decoration: const InputDecoration(
+                labelText: 'Poste',
+                hintText: 'Ex. Développeur Flutter',
+              ),
               textCapitalization: TextCapitalization.sentences,
               validator: (value) => value == null || value.trim().isEmpty
                   ? 'Renseignez le poste.'
@@ -114,7 +125,10 @@ class _CandidatureFormPageState extends State<CandidatureFormPage> {
             TextFormField(
               controller: _entreprise,
               enabled: !_enregistrement,
-              decoration: const InputDecoration(labelText: 'Entreprise'),
+              decoration: const InputDecoration(
+                labelText: 'Entreprise',
+                hintText: 'Ex. Google',
+              ),
               textCapitalization: TextCapitalization.words,
               validator: (value) => value == null || value.trim().isEmpty
                   ? 'Renseignez l’entreprise.'
@@ -153,19 +167,31 @@ class _CandidatureFormPageState extends State<CandidatureFormPage> {
                       icon: const Icon(Icons.clear),
                     ),
             ),
-            if (_erreur != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    _erreur!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _lienOffre,
+              enabled: !_enregistrement,
+              decoration: const InputDecoration(
+                labelText: 'Lien vers l’offre (facultatif)',
+                hintText: 'https://...',
               ),
+              keyboardType: TextInputType.url,
+              autocorrect: false,
+              validator: (value) => Candidature.lienOffreValide(value)
+                  ? null
+                  : 'Utilisez une adresse HTTP ou HTTPS valide.',
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _notes,
+              enabled: !_enregistrement,
+              decoration: const InputDecoration(
+                labelText: 'Notes (facultatives)',
+                hintText: 'Informations complémentaires…',
+              ),
+              minLines: 3,
+              maxLines: 6,
+            ),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: _enregistrement ? null : _enregistrer,

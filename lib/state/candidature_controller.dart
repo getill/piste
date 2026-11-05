@@ -14,14 +14,14 @@ class CandidatureController extends ChangeNotifier {
       poste: 'Développeur Flutter junior',
       entreprise: 'Atelier Mobile',
       statut: StatutCandidature.envoyee,
-      dateCandidature: DateTime(2026, 11, 4),
+      dateCreation: DateTime(2026, 11, 4),
     ),
     Candidature(
       id: 2,
       poste: 'Développeuse web en alternance',
       entreprise: 'Studio Numérique',
       statut: StatutCandidature.entretien,
-      dateCandidature: DateTime(2026, 11, 5),
+      dateCreation: DateTime(2026, 11, 5),
     ),
   ];
   int _prochainId = 3;
@@ -37,16 +37,27 @@ class CandidatureController extends ChangeNotifier {
     required String entreprise,
     required StatutCandidature statut,
     DateTime? dateRelance,
+    String? lienOffre,
+    String? notes,
   }) async {
     if (poste.trim().isEmpty || entreprise.trim().isEmpty) {
       throw ArgumentError('Le poste et l’entreprise sont obligatoires.');
     }
+    if (!Candidature.lienOffreValide(lienOffre)) {
+      throw ArgumentError('Le lien doit être une adresse HTTP ou HTTPS.');
+    }
+    final maintenant = DateTime.now();
     final nouvelle = Candidature(
       id: initiale?.id ?? _prochainId++,
       poste: poste.trim(),
       entreprise: entreprise.trim(),
       statut: statut,
-      dateCandidature: initiale?.dateCandidature ?? DateTime.now(),
+      dateCreation: initiale?.dateCreation ?? maintenant,
+      dateModification: maintenant,
+      lienOffre: lienOffre == null || lienOffre.trim().isEmpty
+          ? null
+          : lienOffre.trim(),
+      notes: notes == null || notes.trim().isEmpty ? null : notes.trim(),
       dateRelance: dateRelance,
     );
     await _repository.enregistrer(nouvelle);

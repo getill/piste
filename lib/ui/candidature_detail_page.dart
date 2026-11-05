@@ -92,12 +92,26 @@ class _CandidatureDetailPageState extends State<CandidatureDetailPage> {
             Text('Statut : ${_candidature.statut.libelle}'),
             const SizedBox(height: 8),
             Text(
-              'Date de candidature : ${dates.formatShortDate(_candidature.dateCandidature)}',
+              'Date de candidature : ${dates.formatShortDate(_candidature.dateCreation)}',
             ),
             const SizedBox(height: 8),
             Text(
               'Relance : ${_candidature.dateRelance == null ? 'Non prévue' : dates.formatShortDate(_candidature.dateRelance!)}',
             ),
+            const SizedBox(height: 8),
+            Text(
+              'Dernière modification : ${dates.formatShortDate(_candidature.dateModification)}',
+            ),
+            if (_candidature.lienOffre != null) ...[
+              const SizedBox(height: 16),
+              const Text('Lien vers l’offre'),
+              SelectableText(_candidature.lienOffre!),
+            ],
+            if (_candidature.notes != null) ...[
+              const SizedBox(height: 16),
+              const Text('Notes'),
+              Text(_candidature.notes!),
+            ],
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _suppression ? null : _modifier,

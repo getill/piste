@@ -31,6 +31,26 @@ class RepositoryAvecErreur extends CandidatureRepository {
   }
 }
 
+Future<void> voir(WidgetTester tester, Finder cible) async {
+  FocusManager.instance.primaryFocus?.unfocus();
+  await tester.pumpAndSettle();
+  if (cible.evaluate().isEmpty) {
+    await tester.scrollUntilVisible(
+      cible,
+      160,
+      scrollable: find
+          .descendant(
+            of: find.byType(ListView).last,
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+  } else {
+    await tester.ensureVisible(cible);
+  }
+  await tester.pumpAndSettle();
+}
+
 Future<void> ouvrirFormulaire(WidgetTester tester) async {
   await tester.tap(find.text('Ajouter'));
   await tester.pumpAndSettle();
@@ -41,6 +61,7 @@ Future<void> saisir(
   String poste,
   String entreprise,
 ) async {
+  await voir(tester, find.widgetWithText(TextFormField, 'Poste'));
   await tester.enterText(find.widgetWithText(TextFormField, 'Poste'), poste);
   await tester.enterText(
     find.widgetWithText(TextFormField, 'Entreprise'),
@@ -49,7 +70,7 @@ Future<void> saisir(
 }
 
 Future<void> enregistrer(WidgetTester tester) async {
-  await tester.ensureVisible(find.text('Enregistrer'));
+  await voir(tester, find.text('Enregistrer'));
   await tester.tap(find.text('Enregistrer'));
   await tester.pumpAndSettle();
 }
@@ -70,6 +91,19 @@ void main() {
         isEmpty,
       );
       await saisir(tester, 'Mobile', 'Piste');
+      await voir(
+        tester,
+        find.widgetWithText(TextFormField, 'Lien vers l’offre (facultatif)'),
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Lien vers l’offre (facultatif)'),
+        'https://exemple.fr/offre',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Notes (facultatives)'),
+        'Préparer le portfolio.',
+      );
+      await voir(tester, find.text('Relance (facultative)'));
       await tester.tap(find.text('Relance (facultative)'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Choisir'));
@@ -77,31 +111,42 @@ void main() {
       await enregistrer(tester);
       expect(find.text('Détail de la candidature'), findsOneWidget);
       expect(find.text('Mobile'), findsOneWidget);
+      expect(find.text('https://exemple.fr/offre'), findsOneWidget);
+      expect(find.text('Préparer le portfolio.'), findsOneWidget);
       expect(find.textContaining('Date de candidature :'), findsOneWidget);
       expect(find.text('Relance : Non prévue'), findsNothing);
 
+      await voir(tester, find.text('Modifier'));
       await tester.tap(find.text('Modifier'));
       await tester.pumpAndSettle();
       expect(find.text('Mobile'), findsOneWidget);
       expect(find.text('Piste'), findsOneWidget);
       expect(find.byTooltip('Retirer la relance'), findsOneWidget);
+      expect(find.text('https://exemple.fr/offre'), findsOneWidget);
+      expect(find.text('Préparer le portfolio.'), findsOneWidget);
       await saisir(tester, 'Mobile senior', 'Piste');
+      await voir(
+        tester,
+        find.byType(DropdownButtonFormField<StatutCandidature>),
+      );
       await tester.tap(find.byType(DropdownButtonFormField<StatutCandidature>));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Entretien').last);
       await tester.pumpAndSettle();
+      await voir(tester, find.byTooltip('Retirer la relance'));
       await tester.tap(find.byTooltip('Retirer la relance'));
       await enregistrer(tester);
       expect(find.text('Mobile senior'), findsOneWidget);
       expect(find.text('Statut : Entretien'), findsOneWidget);
       expect(find.text('Relance : Non prévue'), findsOneWidget);
 
+      await voir(tester, find.text('Supprimer'));
       await tester.tap(find.text('Supprimer'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Annuler'));
       await tester.pumpAndSettle();
       expect(find.text('Mobile senior'), findsOneWidget);
-      await tester.pageBack();
+      await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
       expect(find.byType(Card), findsNWidgets(3));
       await tester.tap(find.text('Mobile senior'));
@@ -128,9 +173,29 @@ void main() {
     await saisir(tester, '   ', '   ');
     await enregistrer(tester);
     expect(find.text('Renseignez le poste.'), findsOneWidget);
-    await tester.pageBack();
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(find.byType(Card), findsNWidgets(2));
+  });
+
+  testWidgets('Refuse un lien d’offre invalide sans fermer le formulaire', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MyApp());
+    await ouvrirFormulaire(tester);
+    await saisir(tester, 'Mobile', 'Piste');
+    final lien = find.widgetWithText(
+      TextFormField,
+      'Lien vers l’offre (facultatif)',
+    );
+    await voir(tester, lien);
+    await tester.enterText(lien, 'javascript:alert(1)');
+    await enregistrer(tester);
+    expect(
+      find.text('Utilisez une adresse HTTP ou HTTPS valide.'),
+      findsOneWidget,
+    );
+    expect(find.text('Nouvelle candidature'), findsOneWidget);
   });
 
   testWidgets('Deux appels rapprochés enregistrent une seule candidature', (
@@ -140,6 +205,7 @@ void main() {
     await tester.pumpWidget(MyApp(repository: repository));
     await ouvrirFormulaire(tester);
     await saisir(tester, 'Mobile', 'Piste');
+    await voir(tester, find.byType(FilledButton));
     final bouton = tester.widget<FilledButton>(find.byType(FilledButton));
     bouton.onPressed!();
     bouton.onPressed!();
@@ -149,13 +215,13 @@ void main() {
       tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
       isNull,
     );
-    await tester.pageBack();
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(find.text('Nouvelle candidature'), findsOneWidget);
     repository.attente.complete();
     await tester.pumpAndSettle();
     expect(find.text('Détail de la candidature'), findsOneWidget);
-    await tester.pageBack();
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(find.byType(Card), findsNWidgets(3));
   });
@@ -169,8 +235,11 @@ void main() {
     await enregistrer(tester);
     expect(find.text('Nouvelle candidature'), findsOneWidget);
     expect(find.textContaining('votre saisie est conservée'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
     expect(find.text('Mobile'), findsOneWidget);
     expect(find.text('Piste'), findsOneWidget);
+    await voir(tester, find.byType(FilledButton));
     expect(
       tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
       isNotNull,
@@ -183,7 +252,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Suppression impossible. Réessayez.'), findsOneWidget);
     expect(find.text('Mobile'), findsOneWidget);
-    await tester.pageBack();
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(find.byType(Card), findsNWidgets(3));
   });
@@ -197,7 +266,7 @@ void main() {
     await tester.tap(find.text('Modifier'));
     await tester.pumpAndSettle();
     await saisir(tester, 'Changement abandonné', 'Autre entreprise');
-    await tester.pageBack();
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(find.text('Développeur Flutter junior'), findsOneWidget);
     expect(find.text('Atelier Mobile'), findsOneWidget);
