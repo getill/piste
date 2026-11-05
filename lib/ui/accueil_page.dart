@@ -31,59 +31,136 @@ class AccueilPage extends StatelessWidget {
     );
   }
 
+  Widget _contenu(BuildContext context) {
+    if (controller.etat == EtatChargement.loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (controller.etat == EtatChargement.error) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(controller.messageErreur ?? 'Chargement impossible.'),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: controller.charger,
+            child: const Text('Réessayer'),
+          ),
+        ],
+      );
+    }
+    final visibles = controller.visibles;
+    final candidatures = controller.candidatures;
+    return TabBarView(
+      children: [
+        Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                onChanged: controller.rechercher,
+                decoration: const InputDecoration(
+                  labelText: 'Rechercher une candidature',
+                  prefixIcon: Icon(Icons.search),
+                ),
+              ),
+            ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                spacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('Toutes'),
+                    selected: controller.filtre == null,
+                    onSelected: (_) => controller.filtrer(null),
+                  ),
+                  for (final statut in StatutCandidature.values)
+                    ChoiceChip(
+                      label: Text(statut.libelle),
+                      selected: controller.filtre == statut,
+                      onSelected: (_) => controller.filtrer(statut),
+                    ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: candidatures.isEmpty
+                  ? const Center(child: Text('Aucune candidature.'))
+                  : visibles.isEmpty
+                  ? const Center(
+                      child: Text('Aucun résultat pour ces critères.'),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                      itemCount: visibles.length,
+                      itemBuilder: (context, index) {
+                        final candidature = visibles[index];
+                        return Card(
+                          child: ListTile(
+                            title: Text(candidature.poste),
+                            subtitle: Text(
+                              '${candidature.entreprise} · ${candidature.statut.libelle}',
+                            ),
+                            onTap: () => _ouvrirDetail(context, candidature),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+        ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+          children: [
+            Text(
+              'Total : ${candidatures.length}',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 16),
+            for (final statut in StatutCandidature.values)
+              ListTile(
+                title: Text(statut.libelle),
+                trailing: Text(
+                  '${candidatures.where((item) => item.statut == statut).length}',
+                ),
+                subtitle: LinearProgressIndicator(
+                  value: candidatures.isEmpty
+                      ? 0
+                      : candidatures
+                                .where((item) => item.statut == statut)
+                                .length /
+                            candidatures.length,
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Piste'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Candidatures'),
-              Tab(text: 'Bilan'),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            ListenableBuilder(
-              listenable: controller,
-              builder: (context, _) {
-                final candidatures = controller.candidatures;
-                if (candidatures.isEmpty) {
-                  return const Center(child: Text('Aucune candidature.'));
-                }
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-                  itemCount: candidatures.length,
-                  itemBuilder: (context, index) {
-                    final candidature = candidatures[index];
-                    return Card(
-                      child: ListTile(
-                        title: Text(candidature.poste),
-                        subtitle: Text(
-                          '${candidature.entreprise} · ${candidature.statut.libelle}',
-                        ),
-                        onTap: () => _ouvrirDetail(context, candidature),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-            ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-              children: const [
-                Text('Le bilan sera réalisé dans un prochain TP.'),
+      child: ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Piste'),
+            bottom: const TabBar(
+              tabs: [
+                Tab(text: 'Candidatures'),
+                Tab(text: 'Bilan'),
               ],
             ),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _ajouter(context),
-          icon: const Icon(Icons.add),
-          label: const Text('Ajouter'),
+          ),
+          body: _contenu(context),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: controller.occupe ? null : () => _ajouter(context),
+            icon: const Icon(Icons.add),
+            label: const Text('Ajouter'),
+          ),
         ),
       ),
     );

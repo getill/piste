@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -19,13 +21,21 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late final CandidatureController _controller = CandidatureController(
-    repository: widget.repository,
-  );
+  late final CandidatureRepository _repository;
+  late final CandidatureController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _repository = widget.repository ?? SqliteCandidatureRepository();
+    _controller = CandidatureController(_repository);
+    unawaited(_controller.charger());
+  }
 
   @override
   void dispose() {
     _controller.dispose();
+    unawaited(_repository.fermer());
     super.dispose();
   }
 

@@ -2,34 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tp_intro/data/candidature_repository.dart';
 import 'package:tp_intro/main.dart';
 import 'package:tp_intro/models/candidature.dart';
 
-class RepositoryRetarde extends CandidatureRepository {
-  final attente = Completer<void>();
-  int appels = 0;
-
-  @override
-  Future<void> enregistrer(Candidature candidature) {
-    appels++;
-    return attente.future;
-  }
-}
-
-class RepositoryAvecErreur extends CandidatureRepository {
-  int appels = 0;
-
-  @override
-  Future<void> enregistrer(Candidature candidature) async {
-    if (++appels == 1) throw Exception('Échec simulé');
-  }
-
-  @override
-  Future<void> supprimer(int id) async {
-    throw Exception('Échec simulé');
-  }
-}
+import 'fake_repository.dart';
 
 Future<void> voir(WidgetTester tester, Finder cible) async {
   FocusManager.instance.primaryFocus?.unfocus();
@@ -79,7 +55,10 @@ void main() {
   testWidgets(
     'Crée, consulte, modifie puis annule et confirme la suppression',
     (tester) async {
-      await tester.pumpWidget(const MyApp());
+      await tester.pumpWidget(
+        MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
+      );
+      await tester.pumpAndSettle();
       expect(find.byType(Card), findsNWidgets(2));
       await ouvrirFormulaire(tester);
       expect(find.text('Nouvelle candidature'), findsOneWidget);
@@ -164,7 +143,10 @@ void main() {
   testWidgets('Refuse un formulaire vide ou rempli uniquement d’espaces', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(
+      MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
+    );
+    await tester.pumpAndSettle();
     await ouvrirFormulaire(tester);
     await enregistrer(tester);
     expect(find.text('Renseignez le poste.'), findsOneWidget);
@@ -181,7 +163,10 @@ void main() {
   testWidgets('Refuse un lien d’offre invalide sans fermer le formulaire', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(
+      MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
+    );
+    await tester.pumpAndSettle();
     await ouvrirFormulaire(tester);
     await saisir(tester, 'Mobile', 'Piste');
     final lien = find.widgetWithText(
@@ -201,8 +186,11 @@ void main() {
   testWidgets('Deux appels rapprochés enregistrent une seule candidature', (
     tester,
   ) async {
-    final repository = RepositoryRetarde();
+    final attente = Completer<void>();
+    final repository = FakeCandidatureRepository(candidaturesDemo())
+      ..attenteEcriture = attente.future;
     await tester.pumpWidget(MyApp(repository: repository));
+    await tester.pumpAndSettle();
     await ouvrirFormulaire(tester);
     await saisir(tester, 'Mobile', 'Piste');
     await voir(tester, find.byType(FilledButton));
@@ -210,7 +198,7 @@ void main() {
     bouton.onPressed!();
     bouton.onPressed!();
     await tester.pump();
-    expect(repository.appels, 1);
+    expect(repository.enregistrements, 1);
     expect(
       tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
       isNull,
@@ -218,7 +206,7 @@ void main() {
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(find.text('Nouvelle candidature'), findsOneWidget);
-    repository.attente.complete();
+    attente.complete();
     await tester.pumpAndSettle();
     expect(find.text('Détail de la candidature'), findsOneWidget);
     await tester.tap(find.byType(BackButton));
@@ -229,7 +217,11 @@ void main() {
   testWidgets('Conserve la saisie après échec et permet de réessayer', (
     tester,
   ) async {
-    await tester.pumpWidget(MyApp(repository: RepositoryAvecErreur()));
+    final repository = FakeCandidatureRepository(candidaturesDemo())
+      ..echecEcriture = true
+      ..echecSuppression = true;
+    await tester.pumpWidget(MyApp(repository: repository));
+    await tester.pumpAndSettle();
     await ouvrirFormulaire(tester);
     await saisir(tester, 'Mobile', 'Piste');
     await enregistrer(tester);
@@ -244,6 +236,7 @@ void main() {
       tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
       isNotNull,
     );
+    repository.echecEcriture = false;
     await enregistrer(tester);
     expect(find.text('Détail de la candidature'), findsOneWidget);
     await tester.tap(find.text('Supprimer'));
@@ -254,13 +247,18 @@ void main() {
     expect(find.text('Mobile'), findsOneWidget);
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Réessayer'));
+    await tester.pumpAndSettle();
     expect(find.byType(Card), findsNWidgets(3));
   });
 
   testWidgets('Une modification annulée laisse la candidature intacte', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(
+      MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Développeur Flutter junior'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Modifier'));
@@ -280,7 +278,10 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(
+      MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
+    );
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     await ouvrirFormulaire(tester);
     await saisir(tester, 'Mobile', 'Piste');

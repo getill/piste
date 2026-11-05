@@ -61,7 +61,7 @@ class _CandidatureDetailPageState extends State<CandidatureDetailPage> {
       _erreur = null;
     });
     try {
-      await widget.controller.supprimer(_candidature.id);
+      await widget.controller.supprimer(_candidature.id!);
       if (!mounted) return;
       Navigator.pop(context);
     } catch (_) {
