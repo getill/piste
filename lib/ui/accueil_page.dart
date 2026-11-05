@@ -1,7 +1,35 @@
 import 'package:flutter/material.dart';
 
+import '../models/candidature.dart';
+import '../state/candidature_controller.dart';
+import 'candidature_detail_page.dart';
+import 'candidature_form_page.dart';
+
 class AccueilPage extends StatelessWidget {
-  const AccueilPage({super.key});
+  const AccueilPage({super.key, required this.controller});
+
+  final CandidatureController controller;
+
+  Future<void> _ajouter(BuildContext context) async {
+    final candidature = await Navigator.of(context).push<Candidature>(
+      MaterialPageRoute(
+        builder: (_) => CandidatureFormPage(controller: controller),
+      ),
+    );
+    if (!context.mounted || candidature == null) return;
+    _ouvrirDetail(context, candidature);
+  }
+
+  void _ouvrirDetail(BuildContext context, Candidature candidature) {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => CandidatureDetailPage(
+          controller: controller,
+          candidature: candidature,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,22 +47,30 @@ class AccueilPage extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-              children: const [
-                Card(
-                  child: ListTile(
-                    title: Text('Développeur Flutter junior'),
-                    subtitle: Text('Atelier Mobile · Envoyée'),
-                  ),
-                ),
-                Card(
-                  child: ListTile(
-                    title: Text('Développeuse web en alternance'),
-                    subtitle: Text('Studio Numérique · Entretien'),
-                  ),
-                ),
-              ],
+            ListenableBuilder(
+              listenable: controller,
+              builder: (context, _) {
+                final candidatures = controller.candidatures;
+                if (candidatures.isEmpty) {
+                  return const Center(child: Text('Aucune candidature.'));
+                }
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                  itemCount: candidatures.length,
+                  itemBuilder: (context, index) {
+                    final candidature = candidatures[index];
+                    return Card(
+                      child: ListTile(
+                        title: Text(candidature.poste),
+                        subtitle: Text(
+                          '${candidature.entreprise} · ${candidature.statut.libelle}',
+                        ),
+                        onTap: () => _ouvrirDetail(context, candidature),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
             ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
@@ -45,15 +81,7 @@ class AccueilPage extends StatelessWidget {
           ],
         ),
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Le formulaire sera réalisé dans un prochain TP.',
-                ),
-              ),
-            );
-          },
+          onPressed: () => _ajouter(context),
           icon: const Icon(Icons.add),
           label: const Text('Ajouter'),
         ),
