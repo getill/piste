@@ -112,6 +112,6 @@ Captures produites avec `adb screencap` sur l’émulateur Android exécutant le
 - [TP 3 : bilan global malgré ce filtre](docs/captures/tp3-bilan-filtre-actif.png)
 - [TP 3 : suppression après redémarrage](docs/captures/tp3-suppression-apres-redemarrage.png)
 
-Les captures VS Code restent à ajouter dans [docs/captures/vscode/](docs/captures/vscode/README.md) :
-le guide précise les trois captures à prendre et les noms des fichiers.
+Les trois captures VS Code sont fournies dans [docs/captures/vscode/](docs/captures/vscode/README.md) :
+arborescence de `lib/`, `flutter doctor` sans problème et `flutter test` avec 21 tests réussis.
 Les maquettes du kit Figma ne sont pas utilisées comme preuves de fonctionnement.

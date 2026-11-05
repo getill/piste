@@ -1,10 +1,15 @@
-# Captures à ajouter depuis VS Code
+# Captures fournies depuis VS Code
 
-Ouvre le dossier `tp_intro` dans VS Code. Fais de vraies captures de l’éditeur et
-de son terminal intégré, puis dépose les fichiers PNG ici, à côté de ce README.
-Les captures de l’application exécutée sur l’émulateur sont déjà dans le dossier parent.
+Les trois captures ont été fournies et vérifiées :
 
-| Fichier à déposer | Manipulation | Ce qui doit être visible |
+- [Arborescence de lib/](01-arborescence-lib.png) : les sept fichiers Dart sont visibles.
+- [flutter doctor](02-flutter-doctor.png) : « No issues found! ».
+- [flutter test](03-flutter-test.png) : 21 tests réussis, « All tests passed! ».
+
+Les captures de l’application exécutée sur l’émulateur sont dans le dossier parent.
+Pour refaire ces captures, ouvre le dossier `tp_intro` dans VS Code et suis ces étapes :
+
+| Fichier | Manipulation | Ce qui doit être visible |
 | --- | --- | --- |
 | `01-arborescence-lib.png` | Dans l’explorateur de VS Code, déplie `lib/`, puis `data/`, `models/`, `state/` et `ui/`. | Tous les fichiers Dart de `lib/`, avec des noms lisibles. |
 | `02-flutter-doctor.png` | Démarre l’émulateur. Dans le terminal intégré, lance `flutter doctor` et attends la fin. | La commande et son résultat, notamment Flutter, Android toolchain et Connected device. |
