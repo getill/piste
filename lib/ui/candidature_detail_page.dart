@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/candidature.dart';
 import '../state/candidature_controller.dart';
 import 'candidature_form_page.dart';
+import 'piste_theme.dart';
 
 class CandidatureDetailPage extends StatefulWidget {
   const CandidatureDetailPage({
@@ -41,8 +42,14 @@ class _CandidatureDetailPageState extends State<CandidatureDetailPage> {
     final confirmation = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        icon: const Icon(
+          Icons.delete_outline_rounded,
+          color: Color(0xFFC82C48),
+        ),
         title: const Text('Supprimer cette candidature ?'),
-        content: Text('${_candidature.poste} — ${_candidature.entreprise}'),
+        content: Text(
+          '${_candidature.poste} — ${_candidature.entreprise}\n\nCette action est définitive.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -72,6 +79,38 @@ class _CandidatureDetailPageState extends State<CandidatureDetailPage> {
     }
   }
 
+  Widget _information(IconData icone, String titre, String valeur) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icone, color: pistePrimaire, size: 23),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  titre,
+                  style: const TextStyle(color: pisteSecondaire, fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  valeur,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final dates = MaterialLocalizations.of(context);
@@ -79,55 +118,141 @@ class _CandidatureDetailPageState extends State<CandidatureDetailPage> {
       canPop: !_suppression,
       child: Scaffold(
         appBar: AppBar(title: const Text('Détail de la candidature')),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(
-              _candidature.poste,
-              style: Theme.of(context).textTheme.headlineSmall,
+        body: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(22, 28, 22, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: const Color(0xFFE6F5F4),
+                      foregroundColor: pistePrimaire,
+                      child: Text(
+                        _candidature.entreprise.trim().isEmpty
+                            ? '?'
+                            : _candidature.entreprise
+                                  .trim()
+                                  .characters
+                                  .first
+                                  .toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _candidature.entreprise,
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _candidature.poste,
+                            style: const TextStyle(
+                              color: pisteSecondaire,
+                              height: 1.6,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: StatutBadge(statut: _candidature.statut),
+                ),
+                const SizedBox(height: 28),
+                _information(
+                  Icons.calendar_today_outlined,
+                  'Date de candidature',
+                  dates.formatFullDate(_candidature.dateCreation),
+                ),
+                const SizedBox(height: 12),
+                _information(
+                  Icons.event_available_outlined,
+                  'Relance',
+                  _candidature.dateRelance == null
+                      ? 'Non prévue'
+                      : dates.formatFullDate(_candidature.dateRelance!),
+                ),
+                const SizedBox(height: 12),
+                _information(
+                  Icons.schedule_rounded,
+                  'Dernière modification',
+                  dates.formatFullDate(_candidature.dateModification),
+                ),
+                if (_candidature.lienOffre != null) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    'Lien vers l’offre',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SelectableText(
+                        _candidature.lienOffre!,
+                        style: const TextStyle(color: pisteAction),
+                      ),
+                    ),
+                  ),
+                ],
+                if (_candidature.notes != null) ...[
+                  const SizedBox(height: 24),
+                  Text('Notes', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Text(
+                        _candidature.notes!,
+                        style: const TextStyle(height: 1.8),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 28),
+                FilledButton.icon(
+                  onPressed: _suppression ? null : _modifier,
+                  icon: const Icon(Icons.edit_outlined, size: 20),
+                  label: const Text('Modifier'),
+                ),
+                const SizedBox(height: 12),
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFC82C48),
+                    minimumSize: const Size(48, 48),
+                  ),
+                  onPressed: _suppression ? null : _supprimer,
+                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                  label: Text(_suppression ? 'Suppression…' : 'Supprimer'),
+                ),
+                if (_erreur != null)
+                  Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      _erreur!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(_candidature.entreprise),
-            const SizedBox(height: 16),
-            Text('Statut : ${_candidature.statut.libelle}'),
-            const SizedBox(height: 8),
-            Text(
-              'Date de candidature : ${dates.formatShortDate(_candidature.dateCreation)}',
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Relance : ${_candidature.dateRelance == null ? 'Non prévue' : dates.formatShortDate(_candidature.dateRelance!)}',
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Dernière modification : ${dates.formatShortDate(_candidature.dateModification)}',
-            ),
-            if (_candidature.lienOffre != null) ...[
-              const SizedBox(height: 16),
-              const Text('Lien vers l’offre'),
-              SelectableText(_candidature.lienOffre!),
-            ],
-            if (_candidature.notes != null) ...[
-              const SizedBox(height: 16),
-              const Text('Notes'),
-              Text(_candidature.notes!),
-            ],
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _suppression ? null : _modifier,
-              child: const Text('Modifier'),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: _suppression ? null : _supprimer,
-              child: Text(_suppression ? 'Suppression…' : 'Supprimer'),
-            ),
-            if (_erreur != null)
-              Text(
-                _erreur!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-          ],
+          ),
         ),
       ),
     );

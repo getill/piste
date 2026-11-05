@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'data/candidature_repository.dart';
 import 'state/candidature_controller.dart';
 import 'ui/accueil_page.dart';
+import 'ui/piste_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -46,16 +47,7 @@ class _MyAppState extends State<MyApp> {
       locale: const Locale('fr'),
       supportedLocales: const [Locale('fr')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF008F93)),
-        scaffoldBackgroundColor: const Color(0xFFF7F9FB),
-        appBarTheme: const AppBarTheme(backgroundColor: Colors.white),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      ),
+      theme: pisteTheme(),
       home: AccueilPage(controller: _controller),
     );
   }

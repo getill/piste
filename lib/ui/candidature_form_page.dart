@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/candidature.dart';
 import '../state/candidature_controller.dart';
+import 'piste_theme.dart';
 
 class CandidatureFormPage extends StatefulWidget {
   const CandidatureFormPage({
@@ -103,101 +104,129 @@ class _CandidatureFormPageState extends State<CandidatureFormPage> {
               : 'Modifier la candidature',
         ),
       ),
-      body: Form(
-        key: _formKey,
-        canPop: !_enregistrement,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextFormField(
-              controller: _poste,
-              enabled: !_enregistrement,
-              decoration: const InputDecoration(
-                labelText: 'Poste',
-                hintText: 'Ex. Développeur Flutter',
-              ),
-              textCapitalization: TextCapitalization.sentences,
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Renseignez le poste.'
-                  : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _entreprise,
-              enabled: !_enregistrement,
-              decoration: const InputDecoration(
-                labelText: 'Entreprise',
-                hintText: 'Ex. Google',
-              ),
-              textCapitalization: TextCapitalization.words,
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Renseignez l’entreprise.'
-                  : null,
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<StatutCandidature>(
-              initialValue: _statut,
-              decoration: const InputDecoration(labelText: 'Statut'),
-              items: [
-                for (final statut in StatutCandidature.values)
-                  DropdownMenuItem(value: statut, child: Text(statut.libelle)),
-              ],
-              onChanged: _enregistrement
-                  ? null
-                  : (value) => setState(() => _statut = value!),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Relance (facultative)'),
-              subtitle: Text(
-                _dateRelance == null
-                    ? 'Aucune date'
-                    : MaterialLocalizations.of(context)
-                          .formatShortDate(_dateRelance!),
-              ),
-              onTap: _enregistrement ? null : _choisirRelance,
-              trailing: _dateRelance == null
-                  ? const Icon(Icons.calendar_today)
-                  : IconButton(
-                      tooltip: 'Retirer la relance',
-                      onPressed: _enregistrement
-                          ? null
-                          : () => setState(() => _dateRelance = null),
-                      icon: const Icon(Icons.clear),
+      body: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          canPop: !_enregistrement,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(22, 28, 22, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  widget.candidature == null
+                      ? 'Nouvelle candidature'
+                      : 'Modifier la candidature',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Complétez les informations ci-dessous.',
+                  style: TextStyle(color: pisteSecondaire, height: 1.6),
+                ),
+                const SizedBox(height: 26),
+                TextFormField(
+                  controller: _entreprise,
+                  enabled: !_enregistrement,
+                  decoration: const InputDecoration(
+                    labelText: 'Entreprise',
+                    hintText: 'Ex. Google',
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Renseignez l’entreprise.'
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _poste,
+                  enabled: !_enregistrement,
+                  decoration: const InputDecoration(
+                    labelText: 'Poste',
+                    hintText: 'Ex. Développeur Flutter',
+                  ),
+                  textCapitalization: TextCapitalization.sentences,
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Renseignez le poste.'
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<StatutCandidature>(
+                  initialValue: _statut,
+                  decoration: const InputDecoration(labelText: 'Statut'),
+                  items: [
+                    for (final statut in StatutCandidature.values)
+                      DropdownMenuItem(
+                        value: statut,
+                        child: Text(statut.libelle),
+                      ),
+                  ],
+                  onChanged: _enregistrement
+                      ? null
+                      : (value) => setState(() => _statut = value!),
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
                     ),
+                    title: const Text('Relance (facultative)'),
+                    subtitle: Text(
+                      _dateRelance == null
+                          ? 'Aucune date'
+                          : MaterialLocalizations.of(context)
+                                .formatShortDate(_dateRelance!),
+                    ),
+                    onTap: _enregistrement ? null : _choisirRelance,
+                    trailing: _dateRelance == null
+                        ? const Icon(Icons.calendar_today)
+                        : IconButton(
+                            tooltip: 'Retirer la relance',
+                            onPressed: _enregistrement
+                                ? null
+                                : () => setState(() => _dateRelance = null),
+                            icon: const Icon(Icons.clear),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _lienOffre,
+                  enabled: !_enregistrement,
+                  decoration: const InputDecoration(
+                    labelText: 'Lien vers l’offre (facultatif)',
+                    hintText: 'https://...',
+                  ),
+                  keyboardType: TextInputType.url,
+                  autocorrect: false,
+                  validator: (value) => Candidature.lienOffreValide(value)
+                      ? null
+                      : 'Utilisez une adresse HTTP ou HTTPS valide.',
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _notes,
+                  enabled: !_enregistrement,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes (facultatives)',
+                    hintText: 'Informations complémentaires…',
+                  ),
+                  minLines: 3,
+                  maxLines: 6,
+                ),
+                const SizedBox(height: 28),
+                FilledButton(
+                  onPressed: _enregistrement ? null : _enregistrer,
+                  child: Text(
+                    _enregistrement ? 'Enregistrement…' : 'Enregistrer',
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _lienOffre,
-              enabled: !_enregistrement,
-              decoration: const InputDecoration(
-                labelText: 'Lien vers l’offre (facultatif)',
-                hintText: 'https://...',
-              ),
-              keyboardType: TextInputType.url,
-              autocorrect: false,
-              validator: (value) => Candidature.lienOffreValide(value)
-                  ? null
-                  : 'Utilisez une adresse HTTP ou HTTPS valide.',
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _notes,
-              enabled: !_enregistrement,
-              decoration: const InputDecoration(
-                labelText: 'Notes (facultatives)',
-                hintText: 'Informations complémentaires…',
-              ),
-              minLines: 3,
-              maxLines: 6,
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _enregistrement ? null : _enregistrer,
-              child: Text(_enregistrement ? 'Enregistrement…' : 'Enregistrer'),
-            ),
-          ],
+          ),
         ),
       ),
     );

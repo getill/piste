@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tp_intro/main.dart';
 import 'package:tp_intro/models/candidature.dart';
+import 'package:tp_intro/ui/repartition_chart.dart';
+import 'package:tp_intro/ui/candidature_card.dart';
 
 import 'fake_repository.dart';
 
@@ -14,12 +16,7 @@ Future<void> voir(WidgetTester tester, Finder cible) async {
     await tester.scrollUntilVisible(
       cible,
       160,
-      scrollable: find
-          .descendant(
-            of: find.byType(ListView).last,
-            matching: find.byType(Scrollable),
-          )
-          .first,
+      scrollable: find.byType(Scrollable).first,
     );
   } else {
     await tester.ensureVisible(cible);
@@ -27,8 +24,13 @@ Future<void> voir(WidgetTester tester, Finder cible) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> ouvrirListe(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('nav-candidatures')));
+  await tester.pumpAndSettle();
+}
+
 Future<void> ouvrirFormulaire(WidgetTester tester) async {
-  await tester.tap(find.text('Ajouter'));
+  await tester.tap(find.byTooltip('Ajouter'));
   await tester.pumpAndSettle();
 }
 
@@ -37,12 +39,13 @@ Future<void> saisir(
   String poste,
   String entreprise,
 ) async {
-  await voir(tester, find.widgetWithText(TextFormField, 'Poste'));
-  await tester.enterText(find.widgetWithText(TextFormField, 'Poste'), poste);
+  await voir(tester, find.widgetWithText(TextFormField, 'Entreprise'));
   await tester.enterText(
     find.widgetWithText(TextFormField, 'Entreprise'),
     entreprise,
   );
+  await voir(tester, find.widgetWithText(TextFormField, 'Poste'));
+  await tester.enterText(find.widgetWithText(TextFormField, 'Poste'), poste);
 }
 
 Future<void> enregistrer(WidgetTester tester) async {
@@ -59,9 +62,10 @@ void main() {
         MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
       );
       await tester.pumpAndSettle();
+      await ouvrirListe(tester);
       expect(find.byType(Card), findsNWidgets(2));
       await ouvrirFormulaire(tester);
-      expect(find.text('Nouvelle candidature'), findsOneWidget);
+      expect(find.text('Nouvelle candidature'), findsWidgets);
       expect(
         tester
             .widget<TextFormField>(find.byType(TextFormField).first)
@@ -92,8 +96,8 @@ void main() {
       expect(find.text('Mobile'), findsOneWidget);
       expect(find.text('https://exemple.fr/offre'), findsOneWidget);
       expect(find.text('Préparer le portfolio.'), findsOneWidget);
-      expect(find.textContaining('Date de candidature :'), findsOneWidget);
-      expect(find.text('Relance : Non prévue'), findsNothing);
+      expect(find.text('Date de candidature'), findsOneWidget);
+      expect(find.text('Non prévue'), findsNothing);
 
       await voir(tester, find.text('Modifier'));
       await tester.tap(find.text('Modifier'));
@@ -116,8 +120,8 @@ void main() {
       await tester.tap(find.byTooltip('Retirer la relance'));
       await enregistrer(tester);
       expect(find.text('Mobile senior'), findsOneWidget);
-      expect(find.text('Statut : Entretien'), findsOneWidget);
-      expect(find.text('Relance : Non prévue'), findsOneWidget);
+      expect(find.text('Entretien'), findsOneWidget);
+      expect(find.text('Non prévue'), findsOneWidget);
 
       await voir(tester, find.text('Supprimer'));
       await tester.tap(find.text('Supprimer'));
@@ -130,9 +134,15 @@ void main() {
       expect(find.byType(Card), findsNWidgets(3));
       await tester.tap(find.text('Mobile senior'));
       await tester.pumpAndSettle();
+      await voir(tester, find.text('Supprimer'));
       await tester.tap(find.text('Supprimer'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Supprimer'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.widgetWithText(TextButton, 'Supprimer'),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(Card), findsNWidgets(2));
       expect(find.text('Mobile senior'), findsNothing);
@@ -147,11 +157,12 @@ void main() {
       MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
     );
     await tester.pumpAndSettle();
+    await ouvrirListe(tester);
     await ouvrirFormulaire(tester);
     await enregistrer(tester);
     expect(find.text('Renseignez le poste.'), findsOneWidget);
     expect(find.text('Renseignez l’entreprise.'), findsOneWidget);
-    expect(find.text('Nouvelle candidature'), findsOneWidget);
+    expect(find.text('Nouvelle candidature'), findsWidgets);
     await saisir(tester, '   ', '   ');
     await enregistrer(tester);
     expect(find.text('Renseignez le poste.'), findsOneWidget);
@@ -167,6 +178,7 @@ void main() {
       MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
     );
     await tester.pumpAndSettle();
+    await ouvrirListe(tester);
     await ouvrirFormulaire(tester);
     await saisir(tester, 'Mobile', 'Piste');
     final lien = find.widgetWithText(
@@ -180,7 +192,7 @@ void main() {
       find.text('Utilisez une adresse HTTP ou HTTPS valide.'),
       findsOneWidget,
     );
-    expect(find.text('Nouvelle candidature'), findsOneWidget);
+    expect(find.text('Nouvelle candidature'), findsWidgets);
   });
 
   testWidgets('Deux appels rapprochés enregistrent une seule candidature', (
@@ -191,6 +203,7 @@ void main() {
       ..attenteEcriture = attente.future;
     await tester.pumpWidget(MyApp(repository: repository));
     await tester.pumpAndSettle();
+    await ouvrirListe(tester);
     await ouvrirFormulaire(tester);
     await saisir(tester, 'Mobile', 'Piste');
     await voir(tester, find.byType(FilledButton));
@@ -205,7 +218,7 @@ void main() {
     );
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
-    expect(find.text('Nouvelle candidature'), findsOneWidget);
+    expect(find.text('Nouvelle candidature'), findsWidgets);
     attente.complete();
     await tester.pumpAndSettle();
     expect(find.text('Détail de la candidature'), findsOneWidget);
@@ -222,10 +235,11 @@ void main() {
       ..echecSuppression = true;
     await tester.pumpWidget(MyApp(repository: repository));
     await tester.pumpAndSettle();
+    await ouvrirListe(tester);
     await ouvrirFormulaire(tester);
     await saisir(tester, 'Mobile', 'Piste');
     await enregistrer(tester);
-    expect(find.text('Nouvelle candidature'), findsOneWidget);
+    expect(find.text('Nouvelle candidature'), findsWidgets);
     expect(find.textContaining('votre saisie est conservée'), findsOneWidget);
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
@@ -239,9 +253,15 @@ void main() {
     repository.echecEcriture = false;
     await enregistrer(tester);
     expect(find.text('Détail de la candidature'), findsOneWidget);
+    await voir(tester, find.text('Supprimer'));
     await tester.tap(find.text('Supprimer'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, 'Supprimer'));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.widgetWithText(TextButton, 'Supprimer'),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Suppression impossible. Réessayez.'), findsOneWidget);
     expect(find.text('Mobile'), findsOneWidget);
@@ -259,8 +279,10 @@ void main() {
       MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
     );
     await tester.pumpAndSettle();
+    await ouvrirListe(tester);
     await tester.tap(find.text('Développeur Flutter junior'));
     await tester.pumpAndSettle();
+    await voir(tester, find.text('Modifier'));
     await tester.tap(find.text('Modifier'));
     await tester.pumpAndSettle();
     await saisir(tester, 'Changement abandonné', 'Autre entreprise');
@@ -282,6 +304,7 @@ void main() {
       MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
     );
     await tester.pumpAndSettle();
+    await ouvrirListe(tester);
     expect(tester.takeException(), isNull);
     await ouvrirFormulaire(tester);
     await saisir(tester, 'Mobile', 'Piste');
@@ -298,15 +321,18 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     attente.complete();
     await tester.pumpAndSettle();
+    await ouvrirListe(tester);
     expect(find.text('Aucune candidature.'), findsOneWidget);
-    await tester.tap(find.text('Bilan'));
+    await tester.tap(find.byKey(const Key('nav-bilan')));
     await tester.pumpAndSettle();
-    expect(find.text('Total : 0'), findsOneWidget);
-    for (final indicateur in tester.widgetList<LinearProgressIndicator>(
-      find.byType(LinearProgressIndicator),
-    )) {
-      expect(indicateur.value, 0);
-    }
+    expect(tester.widget<Text>(find.byKey(const Key('bilan-total'))).data, '0');
+    expect(
+      tester
+          .widget<RepartitionChart>(find.byType(RepartitionChart))
+          .comptes
+          .values,
+      everyElement(0),
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -317,6 +343,7 @@ void main() {
         ..echecLecture = true;
       await tester.pumpWidget(MyApp(repository: repo));
       await tester.pumpAndSettle();
+      await ouvrirListe(tester);
       expect(find.text('Chargement impossible. Réessayez.'), findsOneWidget);
       expect(find.text('Aucune candidature.'), findsNothing);
       expect(find.byType(Card), findsNothing);
@@ -334,6 +361,7 @@ void main() {
         MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
       );
       await tester.pumpAndSettle();
+      await ouvrirListe(tester);
       final recherche = find.widgetWithText(
         TextField,
         'Rechercher une candidature',
@@ -344,20 +372,24 @@ void main() {
       await tester.tap(find.widgetWithText(ChoiceChip, 'Envoyée'));
       await tester.pumpAndSettle();
       expect(find.text('Aucun résultat pour ces critères.'), findsOneWidget);
-      await tester.tap(find.text('Bilan'));
+      await tester.tap(find.byKey(const Key('nav-bilan')));
       await tester.pumpAndSettle();
-      expect(find.text('Total : 2'), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(const Key('bilan-total'))).data,
+        '2',
+      );
       final envoyees = find.widgetWithText(ListTile, 'Envoyée');
       final entretiens = find.widgetWithText(ListTile, 'Entretien');
       expect(
         find.descendant(of: envoyees, matching: find.text('1')),
         findsOneWidget,
       );
+      await voir(tester, entretiens);
       expect(
         find.descendant(of: entretiens, matching: find.text('1')),
         findsOneWidget,
       );
-      await tester.tap(find.text('Candidatures'));
+      await ouvrirListe(tester);
       await tester.pumpAndSettle();
       expect(tester.widget<TextField>(recherche).controller!.text, 'WEB');
       await tester.tap(find.widgetWithText(ChoiceChip, 'Toutes'));
@@ -373,6 +405,7 @@ void main() {
       MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
     );
     await tester.pumpAndSettle();
+    await ouvrirListe(tester);
     final recherche = find.widgetWithText(
       TextField,
       'Rechercher une candidature',
@@ -387,4 +420,88 @@ void main() {
     expect(tester.widget<TextField>(recherche).controller!.text, 'absent');
     expect(find.text('Aucun résultat pour ces critères.'), findsOneWidget);
   });
+  testWidgets(
+    'L’accueil présente les vrais compteurs et Voir tout ouvre la liste',
+    (tester) async {
+      await tester.pumpWidget(
+        MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Bonjour !'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(Card, 'Candidatures'),
+          matching: find.text('2'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.widgetWithText(Card, 'Entretiens'),
+          matching: find.text('1'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.widgetWithText(Card, 'Offres'),
+          matching: find.text('0'),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Voir tout'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+        1,
+      );
+      expect(find.byType(CandidatureCard), findsNWidgets(2));
+    },
+  );
+
+  testWidgets('L’accueil, la liste et le bilan supportent un texte agrandi', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+        child: MyApp(repository: FakeCandidatureRepository(candidaturesDemo())),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(
+      MediaQuery.textScalerOf(tester.element(find.text('Bonjour !'))).scale(14),
+      28,
+    );
+    await ouvrirListe(tester);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const Key('nav-bilan')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await voir(tester, find.byKey(const Key('bilan-total')));
+    expect(tester.widget<Text>(find.byKey(const Key('bilan-total'))).data, '2');
+  });
+
+  testWidgets(
+    'La validation conserve les champs obligatoires après défilement sur petit écran',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 480);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(MyApp(repository: FakeCandidatureRepository()));
+      await tester.pumpAndSettle();
+      await ouvrirFormulaire(tester);
+      await enregistrer(tester);
+      expect(find.text('Renseignez le poste.'), findsOneWidget);
+      expect(find.text('Renseignez l’entreprise.'), findsOneWidget);
+      expect(find.text('Nouvelle candidature'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
