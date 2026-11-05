@@ -102,7 +102,7 @@ ThemeData pisteTheme() {
         fontWeight: FontWeight.w400,
       ),
       labelStyle: const TextStyle(color: pisteSecondaire),
-      floatingLabelStyle: const TextStyle(color: pistePrimaire),
+      floatingLabelStyle: const TextStyle(color: pisteAction),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(

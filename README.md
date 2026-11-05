@@ -98,6 +98,27 @@ la candidature « Recette TP3 » a conservé sa relance au 12 novembre 2026,
 puis sa suppression a été confirmée après un troisième arrêt complet.
 La date de création est restée identique et la date de modification a changé.
 
+## Refonte d’après les maquettes Figma
+
+L’interface reprend le kit local « Piste Figma 2026 » : bleu encre, fond clair,
+accents turquoise, marges de 22 px et cartes arrondies. La police Inter est
+embarquée avec sa [licence OFL](assets/fonts/OFL.txt), sans téléchargement à l’exécution.
+
+La navigation du bas donne accès à l’accueil, aux candidatures et au bilan.
+L’accueil montre les vrais compteurs et les quatre candidatures les plus récemment
+modifiées. Le graphique du bilan et ses pourcentages utilisent toutes les données,
+indépendamment de la recherche et du filtre actifs. Les statuts sont indiqués par
+un texte et une couleur. Les écrans Profil, réglages et le thème sombre du kit
+restent hors de cette refonte des fonctionnalités existantes.
+
+Le formulaire et la fiche défilent ; tous les champs du formulaire restent montés
+pour permettre leur validation même après un défilement sur petit écran. Les tests
+couvrent désormais 24 scénarios unitaires/widgets, dont l’accueil, sa navigation,
+la validation en 320 × 480 et les vues avec une taille de texte multipliée par deux.
+Le code SQLite et son schéma n’ont pas changé pendant la refonte.
+
+[Voir les six captures de la nouvelle interface réellement exécutée sur Android](docs/captures/refonte/README.md).
+
 ## Captures réelles
 
 Captures produites avec `adb screencap` sur l’émulateur Android exécutant le code :
@@ -112,6 +133,6 @@ Captures produites avec `adb screencap` sur l’émulateur Android exécutant le
 - [TP 3 : bilan global malgré ce filtre](docs/captures/tp3-bilan-filtre-actif.png)
 - [TP 3 : suppression après redémarrage](docs/captures/tp3-suppression-apres-redemarrage.png)
 
-Les trois captures VS Code sont fournies dans [docs/captures/vscode/](docs/captures/vscode/README.md) :
+Les trois captures VS Code de fin de TP 3, prises avant la refonte, sont fournies dans [docs/captures/vscode/](docs/captures/vscode/README.md) :
 arborescence de `lib/`, `flutter doctor` sans problème et `flutter test` avec 21 tests réussis.
 Les maquettes du kit Figma ne sont pas utilisées comme preuves de fonctionnement.
